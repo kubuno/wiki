@@ -1,0 +1,30 @@
+# ─── Kubuno Wiki — Configuration ──────────────────────────────────────────────
+# Copy this file to config.toml and adapt the values.
+# Environment variables prefixed with KW__ override this file.
+# Example: KW__SERVER__PORT=3120
+
+[server]
+host = "127.0.0.1"
+port = 3120
+
+[core]
+# Kubuno core URL (used for module registration)
+url             = "http://127.0.0.1:8080"
+# Shared secret — must match server.internal_secret in the core
+internal_secret = "change_me"
+# Drive module URL (content storage for .kbwik files)
+files_url       = "http://127.0.0.1:3101"
+
+# ── Database ──────────────────────────────────────────────────────────────────
+# Connection parameters are injected by the Kubuno supervisor via
+# KUBUNO_DB_HOST / KUBUNO_DB_PORT / KUBUNO_DB_USER / KUBUNO_DB_PASSWORD / KUBUNO_DB_NAME.
+
+[wiki]
+# Max source size of a page (bytes). Default: 2 MB
+max_content_size = 2097152
+# Maximum template/transclusion expansion depth (loop guard)
+max_template_depth = 16
+
+[logging]
+level  = "info"
+format = "pretty"
