@@ -1,0 +1,43 @@
+[module]
+id           = "wiki"
+display_name = "Wiki"
+version      = "0.1.0"
+description  = "Collaborative wiki (MediaWiki-inspired): personal and shared wikis, namespaces, templates/transclusion, categories and special pages. Pages stored as .kbwik files."
+author       = "Kubuno Contributors"
+license      = "AGPL-3.0"
+homepage_url = "https://github.com/kubuno/kubuno"
+runtime      = "rust"
+dependencies = []
+settings_path = "/wiki/settings"
+
+[process]
+entrypoint = "kubuno-wiki"
+args       = []
+
+[server]
+host = "127.0.0.1"
+port = 3120
+
+[routes]
+patterns = [
+    { method = "*", path = "/*" },
+]
+
+[[sidebar_items]]
+id       = "wiki"
+label    = "Wiki"
+icon     = "BookMarked"
+path     = "/wiki"
+position = 26
+protected_folder = "Wiki"
+section  = "main"
+
+[events]
+subscribed = [
+    "UserDeleted",
+]
+publishes = [
+    "WikiPageCreated",
+    "WikiPageUpdated",
+    "WikiPageDeleted",
+]
