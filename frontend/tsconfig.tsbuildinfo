@@ -1,0 +1,1 @@
+{"root":["./src/CategoryView.tsx","./src/PageEditor.tsx","./src/PageView.tsx","./src/SearchView.tsx","./src/SpecialView.tsx","./src/WikiHome.tsx","./src/WikiLogo.tsx","./src/WikiNewActions.tsx","./src/WikiSettingsPage.tsx","./src/WikiSidebarBody.tsx","./src/WikiStartPage.tsx","./src/api.ts","./src/entry.ts","./src/i18n.ts","./src/nav.ts","./src/store.ts"],"version":"6.0.3"}
