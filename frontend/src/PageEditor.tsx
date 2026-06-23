@@ -99,7 +99,7 @@ export default function PageEditor() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 border border-border rounded-t-md bg-surface-1 px-2 py-1">
+      <div className="flex items-center gap-1 border border-border rounded-t-md bg-surface-1 px-2 py-1 no-print">
         {toolBtn(<Bold size={16} />, () => insert('**', '**'), 'Bold')}
         {toolBtn(<Italic size={16} />, () => insert('*', '*'), 'Italic')}
         {toolBtn(<Heading size={16} />, () => insert('\n## ', ''), 'Heading')}

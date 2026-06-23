@@ -10,6 +10,7 @@ import {
   WaffleAppRegistry,
   FileTypeRegistry,
   FaviconRegistry,
+  ModuleSettingsRegistry,
   useSidebarStore,
   useSearchStore,
   SDK_VERSION,
@@ -30,6 +31,9 @@ export function register() {
   WaffleAppRegistry.register('wiki', 'Wiki', [
     { id: 'wiki', label: 'Wiki', Icon: WikiLogo, path: '/wiki' },
   ])
+
+  // The header gear button opens the per-user Wiki settings while in /wiki.
+  ModuleSettingsRegistry.register('wiki')
 
   // Kubuno file type produced by the wiki (.kbwik) — filter + icon + open.
   FileTypeRegistry.register({
@@ -72,11 +76,12 @@ export function register() {
   const PageEditor       = lazy(() => import('./PageEditor'))
   const SpecialView      = lazy(() => import('./SpecialView'))
   const CategoryView     = lazy(() => import('./CategoryView'))
-  const SearchView       = lazy(() => import('./SearchView'))
-  const WikiSettingsPage = lazy(() => import('./WikiSettingsPage'))
+  const SearchView           = lazy(() => import('./SearchView'))
+  const WikiSettingsPage     = lazy(() => import('./WikiSettingsPage'))
+  const WikiUserSettingsPage = lazy(() => import('./WikiUserSettingsPage'))
 
   RouteRegistry.register('wiki',                          WikiStartPage)
-  RouteRegistry.register('wiki/settings',                 WikiSettingsPage)
+  RouteRegistry.register('wiki/settings',                 WikiUserSettingsPage)
   RouteRegistry.register('wiki/:wikiId',                  WikiHome)
   RouteRegistry.register('wiki/:wikiId/page/:ns/:title',  PageView)
   RouteRegistry.register('wiki/:wikiId/edit/:ns/:title',  PageEditor)
