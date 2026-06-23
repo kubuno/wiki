@@ -85,13 +85,13 @@ export default function PageView() {
         <div className="flex items-start justify-between">
           <h1 className="text-2xl font-serif text-text-primary pb-2">{page.prefixed_title}</h1>
           {page.can_edit && page.exists && (
-            <button className="p-1.5 rounded hover:bg-surface-1 text-text-secondary"
+            <button className="p-1.5 rounded hover:bg-surface-1 text-text-secondary no-print"
               onClick={(e) => setMenu({ top: e.clientY, left: e.clientX })}>
               <MoreVertical size={18} />
             </button>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 no-print">
           {tab(t('read'), <BookOpen size={15} />, () => {}, true)}
           {page.can_edit && tab(t('edit'), <Pencil size={15} />, () => navigate(editPath(wikiId, ns, title)))}
           {page.exists && tab(t('history'), <HistoryIcon size={15} />, () => navigate(`${pagePath(wikiId, ns, title)}?history=1`))}
@@ -134,7 +134,7 @@ export default function PageView() {
       ) : (
         <div className="flex gap-6">
           {page.toc && page.toc.length > 1 && (
-            <nav className="hidden lg:block w-56 shrink-0 sticky top-4 self-start text-sm">
+            <nav className="hidden lg:block w-56 shrink-0 sticky top-4 self-start text-sm no-print">
               <div className="font-semibold text-text-secondary mb-1">{t('table_of_contents')}</div>
               <ul className="space-y-0.5">
                 {page.toc.map((e, i) => (
