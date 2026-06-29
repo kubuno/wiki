@@ -1,7 +1,7 @@
 [module]
 id           = "wiki"
 display_name = "Wiki"
-version      = "0.1.0"
+version      = "0.1.2"
 description  = "Collaborative wiki (MediaWiki-inspired): personal and shared wikis, namespaces, templates/transclusion, categories and special pages. Pages stored as .kbwik files."
 author       = "Kubuno Contributors"
 license      = "AGPL-3.0"
