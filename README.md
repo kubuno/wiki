@@ -61,6 +61,12 @@ core proxies its routes and forwards the authenticated user via `x-kubuno-user-*
 Loaded at runtime by the host as an ESM bundle (`entry.js` exporting `register()`); shared
 specifiers (`react`, `@kubuno/sdk`, `@ui`, …) are resolved by the host import map.
 
+## Install
+
+This module ships in the **all-in-one [Kubuno](https://github.com/kubuno/core) Docker image** (`ghcr.io/kubuno/kubuno`) — the easiest way to self-host a full Kubuno instance (core + every module). See **[kubuno/docker](https://github.com/kubuno/docker)** for `docker compose` instructions.
+
+To build this module from source (Debian package), see below.
+
 ## Development
 
 ```bash
