@@ -78,8 +78,8 @@ pub async fn create_wiki(state: &AppState, user_id: Uuid, req: CreateWikiRequest
     let storage_owner = if req.is_shared { system_owner() } else { user_id };
 
     let wiki = sqlx::query_as::<_, Wiki>(
-        "INSERT INTO wikis (owner_id, storage_owner_id, slug, name, description, is_shared) \
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        "INSERT INTO wikis (id, owner_id, storage_owner_id, slug, name, description, is_shared) \
+         VALUES (COALESCE($7, uuid_generate_v4()), $1, $2, $3, $4, $5, $6) RETURNING *",
     )
     .bind(user_id)
     .bind(storage_owner)
@@ -87,6 +87,7 @@ pub async fn create_wiki(state: &AppState, user_id: Uuid, req: CreateWikiRequest
     .bind(name)
     .bind(req.description.trim())
     .bind(req.is_shared)
+    .bind(req.id)
     .fetch_one(&state.db)
     .await?;
 

@@ -1,0 +1,13 @@
+DROP TRIGGER IF EXISTS trg_page_change_seq ON pages;
+DROP FUNCTION IF EXISTS page_bump_change_seq();
+ALTER TABLE pages DROP COLUMN IF EXISTS change_seq;
+DROP SEQUENCE IF EXISTS page_change_seq;
+DROP TRIGGER IF EXISTS trg_member_bump_wiki ON wiki_members;
+DROP FUNCTION IF EXISTS member_bump_wiki();
+DROP TRIGGER IF EXISTS trg_wiki_tombstone ON wikis;
+DROP FUNCTION IF EXISTS wiki_tombstone();
+DROP TABLE IF EXISTS wiki_tombstones;
+DROP TRIGGER IF EXISTS trg_wiki_change_seq ON wikis;
+DROP FUNCTION IF EXISTS wiki_bump_change_seq();
+ALTER TABLE wikis DROP COLUMN IF EXISTS change_seq;
+DROP SEQUENCE IF EXISTS wiki_change_seq;

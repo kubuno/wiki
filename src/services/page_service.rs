@@ -156,9 +156,9 @@ pub async fn save_page(
         p.id
     } else {
         let id: Uuid = sqlx::query_scalar(
-            "INSERT INTO pages (wiki_id, namespace, title, slug, file_id, redirect_to, preview, \
+            "INSERT INTO pages (id, wiki_id, namespace, title, slug, file_id, redirect_to, preview, \
                 byte_size, current_author_id, current_rev_at) \
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+             VALUES (COALESCE($11, uuid_generate_v4()),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
         )
         .bind(wiki.id)
         .bind(&ns)
@@ -170,6 +170,7 @@ pub async fn save_page(
         .bind(byte_size)
         .bind(author_id)
         .bind(now)
+        .bind(req.id)
         .fetch_one(&mut *tx)
         .await?;
 
