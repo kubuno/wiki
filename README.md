@@ -33,6 +33,11 @@ a rendered HTML cache and the full revision history.
 - **Links & navigation** — red links for missing pages, "what links here" backlinks,
   redirects, full-text search (French + unaccent).
 - **Revision history** — every save is recorded inside the `.kbwik` file (history viewer).
+- **Local-first delta sync** — `GET /wikis/delta` and `GET /pages/delta` stream owner-scoped
+  changes past a monotonic cursor: wiki changes inline their members (with tombstones for
+  hard deletes), page changes inline the full `.kbwik` envelope and category rows, so a
+  local-first client can mirror a personal wiki and read it offline. Creation endpoints
+  accept client-minted UUIDs so offline-created wikis and pages replay verbatim.
 
 ## Architecture
 
@@ -75,6 +80,17 @@ cd frontend && npm ci && npm run build     # frontend bundle
 bash build_deb.sh --install                # build + install the .deb locally
 bash ../_tools/deploy_local.sh wiki         # fast local rebuild + restart
 ```
+
+Native packages for other platforms are built the same way — each one lays the module out
+exactly like the `.deb`, so the core discovers it identically:
+
+```bash
+bash build_rpm.sh        # Fedora / RHEL / openSUSE  → dist/kubuno-wiki-*.rpm
+bash build_windows.sh    # Windows installer (NSIS)  → dist/kubuno-wiki-setup-*-x64.exe
+bash build_macos.sh      # macOS (run on a Mac)      → dist/kubuno-wiki-*.pkg
+```
+
+All of these are also produced by CI and attached to the GitHub Release on every `v*` tag.
 
 ## License
 
