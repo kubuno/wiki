@@ -6,12 +6,15 @@ use axum::{
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::handlers::{health, pages, search, special, wikis};
+use crate::handlers::{delta, health, pages, search, special, wikis};
 use crate::middleware::require_auth;
 use crate::state::AppState;
 
 pub fn build(state: AppState) -> Router {
     let authed = Router::new()
+        // Sync deltas (local-first) — before the /wikis/:id catch-alls.
+        .route("/wikis/delta", get(delta::wikis_delta))
+        .route("/pages/delta", get(delta::pages_delta))
         // Wikis
         .route("/wikis", get(wikis::list).post(wikis::create))
         .route("/wikis/:id", get(wikis::get).patch(wikis::update).delete(wikis::delete))

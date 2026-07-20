@@ -1,3 +1,4 @@
+pub mod delta;
 pub mod health;
 pub mod pages;
 pub mod search;

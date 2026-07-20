@@ -23,8 +23,9 @@ export default function WikiSidebarBody({ collapsed = false }: { collapsed?: boo
     enabled: !!wikiId,
   })
 
+  // `to` makes SidebarNavItem render a real <a href> (React Router <Link>).
   const item = (label: string, icon: React.ReactNode, to: string, active: boolean) => (
-    <SidebarNavItem label={label} icon={icon} collapsed={collapsed} active={active} onClick={() => navigate(to)} />
+    <SidebarNavItem label={label} icon={icon} collapsed={collapsed} active={active} to={to} />
   )
 
   return (

@@ -38,6 +38,9 @@ pub struct PageSummary {
 
 #[derive(Debug, Deserialize)]
 pub struct SavePageRequest {
+    /// Optional client-minted id (local-first sync replay) — honoured verbatim.
+    #[serde(default)]
+    pub id: Option<Uuid>,
     pub namespace: Option<String>,
     pub title:     String,
     pub content:   String,
