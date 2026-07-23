@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 # Drive client face (content stored as .kbwik files via the `drive` module).
-kubuno-drive = { git = "https://github.com/kubuno/drive", tag = "drive-v0.1.0", package = "kubuno-drive", default-features = false }
+kubuno-drive = { git = "https://github.com/kubuno/drive", tag = "drive-v0.1.4", package = "kubuno-drive", default-features = false }
 # Workspace
 tokio          = { workspace = true }
 axum           = { workspace = true }
@@ -95,7 +95,7 @@ validator = { version = "0.18", features = ["derive"] }
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tokio-util         = { version = "0.7", features = ["io"] }
-kubuno-seccomp     = { git = "https://github.com/kubuno/core", tag = "seccomp-v0.1.0", package = "kubuno-seccomp" }
+kubuno-seccomp     = { git = "https://github.com/kubuno/core", tag = "seccomp-v0.1.1", package = "kubuno-seccomp" }
 
 # Errors
 thiserror = "1"
