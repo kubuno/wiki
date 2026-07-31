@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Input, Spinner } from '@ui'
+import { Button, Input, Spinner, useSaveShortcut } from '@ui'
 import { Bold, Italic, Heading, Link2, Braces, Tag, List } from 'lucide-react'
 import { wikiApi, pagePath, type PreviewResponse } from './api'
 
@@ -62,6 +62,9 @@ export default function PageEditor() {
       ta.selectionEnd = start + before.length + sel.length
     })
   }
+
+  // Ctrl+S / ⌘S saves immediately.
+  useSaveShortcut(() => { void save() })
 
   const save = async () => {
     if (!title.trim() || !content.trim()) return
