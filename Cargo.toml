@@ -1,6 +1,6 @@
 [package]
 name        = "kubuno-wiki"
-version     = "0.1.4"
+version     = "0.1.5"
 edition     = "2021"
 description = "Kubuno Wiki — collaborative wiki module (MediaWiki-inspired), pages stored as .kbwik files"
 license     = "AGPL-3.0"
