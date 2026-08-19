@@ -7,20 +7,22 @@
 import { lazy } from 'react'
 import {
   RouteRegistry,
+  ExtensionRegistry,
   WaffleAppRegistry,
   FileTypeRegistry,
   FaviconRegistry,
   ModuleSettingsRegistry,
   useSidebarStore,
   useSearchStore,
+  navigate,
   SDK_VERSION,
 } from '@kubuno/sdk'
 import './index.css'
 import './i18n'
 import { useWikiStore } from './store'
-import { goTo, getActiveWiki } from './nav'
+import { getActiveWiki } from './nav'
 import WikiLogo from './WikiLogo'
-import WikiNewActions from './WikiNewActions'
+import { newActionItems } from './WikiNewActions'
 import WikiSidebarBody from './WikiSidebarBody'
 
 export const sdkVersion = SDK_VERSION
@@ -52,9 +54,14 @@ export function register() {
     moduleId:    'wiki',
     routePrefix: '/wiki',
     newButtonLabelKey: 'wiki:new_page',
-    NewActions:  WikiNewActions,
     SidebarBody: WikiSidebarBody,
     collapsedBody: true,
+  })
+
+  // Sidebar "New" button: contribute MenuItem[] (data) to the shell menu.
+  ExtensionRegistry.register('shell.new-actions', 'wiki', {
+    moduleId: 'wiki',
+    items: newActionItems,
   })
 
   useSearchStore.getState().register({
@@ -65,7 +72,7 @@ export function register() {
     onSearch: (q) => {
       useWikiStore.getState().setSearchQuery(q)
       const id = getActiveWiki()
-      if (id) goTo(`/wiki/${id}/search`)
+      if (id) navigate(`/wiki/${id}/search`)
     },
   })
 

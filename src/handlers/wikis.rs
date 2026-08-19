@@ -5,7 +5,7 @@ use axum::{
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-use crate::errors::Result;
+use crate::errors::{Result, WikiError};
 use crate::middleware::WikiUser;
 use crate::models::member::{AddMemberRequest, UpdateMemberRequest};
 use crate::models::wiki::{CreateWikiRequest, UpdateWikiRequest};
@@ -25,6 +25,16 @@ pub async fn create(
     Extension(user): Extension<WikiUser>,
     Json(req): Json<CreateWikiRequest>,
 ) -> Result<Json<Value>> {
+    // Instance policy, checked before anything is written: who may open a space,
+    // and — separately — who may open a SHARED one.
+    let cfg = state.instance();
+    if !cfg.wiki_creation.allows(user.is_admin()) {
+        return Err(WikiError::Forbidden);
+    }
+    if req.is_shared && !cfg.shared_wiki_creation.allows(user.is_admin()) {
+        return Err(WikiError::Forbidden);
+    }
+
     let wiki = wiki_service::create_wiki(&state, user.id, req).await?;
     Ok(Json(json!({ "wiki": wiki })))
 }

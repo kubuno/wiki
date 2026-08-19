@@ -9,16 +9,26 @@ import { ModuleFileBrowser, type FileItem } from '@kubuno/drive'
 import { getDateLocale } from '@kubuno/sdk'
 import { BookMarked, Plus, Users, Lock, FileText } from 'lucide-react'
 import { wikiApi, pagePath } from './api'
+import { useWikiCreationPolicy } from './useWikiInstance'
 
 export default function WikiStartPage() {
   const { t, i18n } = useTranslation('wiki')
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [creating, setCreating] = useState(false)
+  const { canCreate } = useWikiCreationPolicy()
 
+  // `?new=1` is how the sidebar "New" menu asks for the dialog. It is honoured
+  // only when the instance lets this user open a space — otherwise the request
+  // is simply dropped and they land on the wiki home, instead of filling in a
+  // form the server will refuse.
   useEffect(() => {
-    if (params.get('new') === '1') { setCreating(true); params.delete('new'); setParams(params, { replace: true }) }
-  }, [params, setParams])
+    if (params.get('new') === '1') {
+      if (canCreate) setCreating(true)
+      params.delete('new')
+      setParams(params, { replace: true })
+    }
+  }, [params, setParams, canCreate])
 
   // Recents launcher: recently edited pages across every accessible wiki.
   const { data: recents = [] } = useQuery({ queryKey: ['wiki-recent-pages'], queryFn: () => wikiApi.recentPages(12) })
@@ -37,9 +47,9 @@ export default function WikiStartPage() {
     onClick:  () => navigate(pagePath(p.wiki_id, p.namespace, p.title)),
   }))
 
-  const newWikiButton = (
+  const newWikiButton = canCreate ? (
     <Button size="sm" icon={<Plus size={15} />} onClick={() => setCreating(true)}>{t('new_wiki')}</Button>
-  )
+  ) : undefined
 
   // Onglet « Parcourir » par défaut (navigateur de fichiers plein cadre), comme
   // le sous-module Documents ; « Mes wikis » en second (gestion des espaces).
@@ -101,13 +111,15 @@ export default function WikiStartPage() {
 function WikisGrid({ onCreate }: { onCreate: () => void }) {
   const { t } = useTranslation('wiki')
   const navigate = useNavigate()
+  const { canCreate } = useWikiCreationPolicy()
   const { data: wikis = [], isLoading } = useQuery({ queryKey: ['wikis'], queryFn: wikiApi.listWikis })
 
   return (
     <div className="h-full overflow-y-auto px-6 py-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-text-primary">{t('my_wikis')}</h2>
-        <Button variant="primary" onClick={onCreate}><Plus size={16} /> {t('create_wiki')}</Button>
+        {/* Instance policy may reserve space creation to administrators. */}
+        {canCreate && <Button variant="primary" onClick={onCreate}><Plus size={16} /> {t('create_wiki')}</Button>}
       </div>
 
       {isLoading ? (
@@ -151,6 +163,7 @@ export function CreateWikiDialog({ onClose, onCreated }: { onClose: () => void; 
   const [description, setDescription] = useState('')
   const [isShared, setIsShared] = useState(false)
   const [busy, setBusy] = useState(false)
+  const { canCreateShared } = useWikiCreationPolicy()
 
   const submit = async () => {
     if (!name.trim()) return
@@ -175,13 +188,17 @@ export function CreateWikiDialog({ onClose, onCreated }: { onClose: () => void; 
             className="w-full rounded-md border border-border px-2.5 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-        <label className="flex items-start gap-2 text-sm text-text-primary cursor-pointer">
-          <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} className="mt-0.5" />
-          <span>
-            {t('shared_wiki')}
-            <span className="block text-xs text-text-tertiary">{t('shared_wiki_hint')}</span>
-          </span>
-        </label>
+        {/* Shared spaces can be reserved to administrators independently of
+            personal ones — the checkbox disappears rather than failing on save. */}
+        {canCreateShared && (
+          <label className="flex items-start gap-2 text-sm text-text-primary cursor-pointer">
+            <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} className="mt-0.5" />
+            <span>
+              {t('shared_wiki')}
+              <span className="block text-xs text-text-tertiary">{t('shared_wiki_hint')}</span>
+            </span>
+          </label>
+        )}
         <div className="flex justify-end gap-2 mt-auto">
           <Button variant="ghost" onClick={onClose}>{t('cancel')}</Button>
           <Button variant="primary" loading={busy} disabled={!name.trim()} onClick={submit}>{t('create')}</Button>

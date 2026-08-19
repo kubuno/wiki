@@ -1,16 +1,8 @@
-// Bridge so non-component callbacks (e.g. the host search bar's onSearch) can use
-// the module's react-router navigation. The sidebar — mounted for every /wiki
-// route — registers the live navigate function here, plus the active wiki id.
-let navFn: ((to: string) => void) | null = null
+// Bridge so non-component callbacks (e.g. the host search bar's onSearch) know
+// which wiki is currently open. The sidebar — mounted for every /wiki route —
+// registers the active wiki id here.
+// (Navigation itself no longer needs a bridge: use `navigate` from @kubuno/sdk.)
 let activeWikiId: string | null = null
-
-export function setNav(fn: (to: string) => void) {
-  navFn = fn
-}
-
-export function goTo(to: string) {
-  navFn?.(to)
-}
 
 export function setActiveWiki(id: string | null) {
   activeWikiId = id

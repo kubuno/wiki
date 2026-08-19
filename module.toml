@@ -32,6 +32,92 @@ position = 26
 protected_folder = "Wiki"
 section  = "main"
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  Wiki — pages du panneau d'administration
+# ══════════════════════════════════════════════════════════════════════════════
+# Chaque groupe devient une entrée du menu d'administration (Modules → Wiki), à
+# son adresse propre. Chaque réglage déclaré ici est LU par du code qui agit :
+# un bouton qui ne fait rien n'a pas sa place dans une console.
+
+[[setting_groups]]
+id          = "spaces"
+label       = "Espaces"
+icon        = "BookMarked"
+position    = 1
+description  = "Qui peut ouvrir un espace wiki, et qui peut en ouvrir un partagé."
+
+[[settings]]
+key         = "wiki_creation"
+scope       = "global"
+public      = true
+type        = "enum"
+values      = ["everyone", "admins"]
+group       = "spaces"
+default     = "everyone"
+label       = "Création d'un espace"
+description  = "« everyone » : tout utilisateur connecté peut créer son espace. « admins » : réservé aux administrateurs de la plateforme."
+
+[[settings]]
+key         = "shared_wiki_creation"
+scope       = "global"
+public      = true
+type        = "enum"
+values      = ["everyone", "admins"]
+group       = "spaces"
+default     = "everyone"
+label       = "Création d'un espace partagé"
+description  = "Qui peut créer un espace dans lequel d'autres membres sont invités. Un espace personnel n'engage que son auteur ; un espace partagé engage l'organisation."
+
+[[setting_groups]]
+id    = "limits"
+label = "Limites"
+icon  = "Ruler"
+position = 2
+description  = "Les plafonds appliqués à l'enregistrement et au rendu d'une page."
+
+[[settings]]
+key         = "max_content_size"
+scope       = "global"
+type        = "int"
+group       = "limits"
+default     = 2097152
+min         = 1024
+max         = 1073741824
+unit        = "octets"
+label       = "Taille maximale d'une page (octets)"
+description  = "Refuse l'enregistrement d'une page dont la source dépasse cette taille."
+
+[[settings]]
+key         = "max_template_depth"
+scope       = "global"
+type        = "int"
+group       = "limits"
+default     = 16
+min         = 1
+max         = 100
+label       = "Profondeur maximale de transclusion"
+description  = "Nombre maximal de modèles imbriqués que le rendu déroule avant d'arrêter l'expansion."
+
+[[setting_groups]]
+id          = "history"
+label       = "Historique"
+icon        = "History"
+position    = 3
+description  = "Combien de révisions une page conserve."
+
+[[settings]]
+key         = "max_revisions_per_page"
+scope       = "global"
+type        = "int"
+group       = "history"
+default     = 0
+min         = 0
+max         = 10000
+unit        = "révisions"
+risk        = "warning"
+label       = "Révisions conservées par page"
+description  = "À l'enregistrement, les révisions les plus anciennes au-delà de ce nombre sont retirées de l'historique de la page. 0 : historique complet conservé."
+
 [events]
 subscribed = [
     "UserDeleted",

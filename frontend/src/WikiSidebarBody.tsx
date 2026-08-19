@@ -1,20 +1,20 @@
 import { useEffect } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Library, Home, FileStack, History, Tags, HelpCircle, Unlink, Users, Settings } from 'lucide-react'
 import { SidebarNavItem } from '@kubuno/sdk'
 import { wikiApi } from './api'
-import { setNav, setActiveWiki } from './nav'
+import { setActiveWiki } from './nav'
 
 export default function WikiSidebarBody({ collapsed = false }: { collapsed?: boolean }) {
   const { t } = useTranslation('wiki')
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const params = useParams()
   const wikiId = params.wikiId ?? null
 
-  useEffect(() => setNav(navigate), [navigate])
+  // Expose the active wiki id to non-component callbacks (host search bar,
+  // "New" menu items).
   useEffect(() => { setActiveWiki(wikiId) }, [wikiId])
 
   const { data: wiki } = useQuery({

@@ -21,6 +21,25 @@ pub struct RenderedPage {
     pub render: RenderResult,
 }
 
+/// Applies the instance's revision-retention window to a page's history.
+///
+/// Revisions are appended, so the head of the vector is the oldest one — that is
+/// what a retention window drops. `keep == 0` means "keep everything", which is
+/// the default: forgetting history must be an explicit decision, never one an
+/// administrator makes by leaving a field alone.
+///
+/// The newest revision is never dropped: it is the page's current content, and
+/// losing it would leave the file describing a state nothing points at.
+fn trim_revisions(revisions: &mut Vec<Revision>, keep: u32) {
+    if keep == 0 {
+        return; // retention disabled: the whole history stays
+    }
+    let keep = keep as usize;
+    if revisions.len() > keep {
+        revisions.drain(..revisions.len() - keep);
+    }
+}
+
 pub async fn list_pages(state: &AppState, wiki_id: Uuid) -> Result<Vec<PageSummary>> {
     let rows = sqlx::query_as::<_, PageSummary>(
         "SELECT id, namespace, title, slug, redirect_to, preview, byte_size, current_rev_at \
@@ -75,7 +94,7 @@ pub async fn save_page(
     author_name: &str,
     req: SavePageRequest,
 ) -> Result<Page> {
-    if req.content.len() as u64 > state.settings.wiki.max_content_size {
+    if req.content.len() as u64 > state.instance().max_content_size {
         return Err(WikiError::ContentTooLarge);
     }
 
@@ -118,6 +137,7 @@ pub async fn save_page(
             env.content_html = render.html.clone();
             env.redirect = render.redirect.clone();
             env.revisions.push(new_rev);
+            trim_revisions(&mut env.revisions, state.instance().max_revisions_per_page);
             content_files::write_page_file(state, wiki.storage_owner_id, p.file_id, &env).await?;
             (p.file_id, "edit")
         }
@@ -454,4 +474,46 @@ pub async fn locate_by_file(state: &AppState, file_id: Uuid) -> Result<(Uuid, St
     .await?
     .ok_or_else(|| WikiError::NotFound("page".into()))?;
     Ok(row)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rev(n: u8) -> Revision {
+        Revision {
+            rev_id:      Uuid::from_u128(n as u128),
+            author_id:   None,
+            author_name: String::new(),
+            ts:          String::new(),
+            comment:     String::new(),
+            minor:       false,
+            content:     String::new(),
+            size:        0,
+        }
+    }
+
+    #[test]
+    fn zero_keeps_the_whole_history() {
+        let mut revs: Vec<Revision> = (1..=5).map(rev).collect();
+        trim_revisions(&mut revs, 0);
+        assert_eq!(revs.len(), 5);
+    }
+
+    #[test]
+    fn the_oldest_revisions_are_the_ones_dropped() {
+        let mut revs: Vec<Revision> = (1..=5).map(rev).collect();
+        trim_revisions(&mut revs, 2);
+        assert_eq!(revs.len(), 2);
+        // 4 and 5 survive — the current content is always the last one.
+        assert_eq!(revs[0].rev_id, Uuid::from_u128(4));
+        assert_eq!(revs[1].rev_id, Uuid::from_u128(5));
+    }
+
+    #[test]
+    fn a_shorter_history_than_the_window_is_untouched() {
+        let mut revs: Vec<Revision> = (1..=2).map(rev).collect();
+        trim_revisions(&mut revs, 10);
+        assert_eq!(revs.len(), 2);
+    }
 }

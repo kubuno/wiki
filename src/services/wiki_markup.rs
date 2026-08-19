@@ -123,7 +123,7 @@ pub async fn render_page(
         wiki_id,
         namespace: namespace.to_string(),
         title: title.to_string(),
-        max_depth: state.settings.wiki.max_template_depth,
+        max_depth: state.instance().max_template_depth,
     };
     render(&ctx, source).await
 }
