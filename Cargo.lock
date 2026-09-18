@@ -1424,7 +1424,7 @@ dependencies = [
 
 [[package]]
 name = "kubuno-wiki"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "ammonia",
  "anyhow",
