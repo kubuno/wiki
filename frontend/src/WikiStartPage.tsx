@@ -1,12 +1,11 @@
+import { formatDate } from '@kubuno/sdk'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { format } from 'date-fns'
 import { StartPage, FloatingWindow, Button, Input, Spinner } from '@ui'
 import type { StartPageRecentItem, StartPageTab } from '@ui'
 import { ModuleFileBrowser, type FileItem } from '@kubuno/drive'
-import { getDateLocale } from '@kubuno/sdk'
 import { BookMarked, Plus, Users, Lock, FileText } from 'lucide-react'
 import { wikiApi, pagePath } from './api'
 import { useWikiCreationPolicy } from './useWikiInstance'
@@ -42,7 +41,7 @@ export default function WikiStartPage() {
   const recentItems: StartPageRecentItem[] = recents.map(p => ({
     id:       `${p.wiki_id}:${p.namespace}:${p.slug}`,
     name:     p.namespace === 'Main' ? p.title : `${p.namespace}:${p.title}`,
-    subtitle: p.current_rev_at ? format(new Date(p.current_rev_at), 'd MMM', { locale: getDateLocale(i18n.language) }) : undefined,
+    subtitle: p.current_rev_at ? formatDate(new Date(p.current_rev_at), 'date') : undefined,
     icon:     <FileText size={18} className="text-text-tertiary" strokeWidth={1.5} />,
     onClick:  () => navigate(pagePath(p.wiki_id, p.namespace, p.title)),
   }))

@@ -1,9 +1,9 @@
+import { SidebarNavItem } from '@kubuno/sdk'
 import { useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Library, Home, FileStack, History, Tags, HelpCircle, Unlink, Users, Settings } from 'lucide-react'
-import { SidebarNavItem } from '@kubuno/sdk'
 import { wikiApi } from './api'
 import { setActiveWiki } from './nav'
 

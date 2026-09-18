@@ -1,6 +1,6 @@
+import { i18n, prompt, navigate } from '@kubuno/sdk'
 import type { MenuItem } from '@ui'
 import { FilePlus2, BookPlus } from 'lucide-react'
-import { i18n, prompt, navigate } from '@kubuno/sdk'
 import { editPath } from './api'
 import { getActiveWiki } from './nav'
 

@@ -9,7 +9,6 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "date-fns": "^4.4.0",
     "dompurify": "^3.4.5",
     "lucide-react": "^1.17.0"
   },

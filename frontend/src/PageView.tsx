@@ -1,9 +1,9 @@
+import { useConfirm, prompt } from '@kubuno/sdk'
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MenuDropdown, ConfirmDialog, Button, Spinner, type MenuItem } from '@ui'
-import { useConfirm, prompt } from '@kubuno/sdk'
 import { MoreVertical, Pencil, History as HistoryIcon, MessageSquare, BookOpen } from 'lucide-react'
 import { wikiApi, pagePath, editPath, slugify } from './api'
 

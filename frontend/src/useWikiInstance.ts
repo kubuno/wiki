@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { api, useAuthStore } from '@kubuno/sdk'
+import { useQuery } from '@tanstack/react-query'
 
 // Instance policy on who may open a space, as the administrator left it in the
 // console. The BACKEND is what enforces it (wikis::create returns 403); this

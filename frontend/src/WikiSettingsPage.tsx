@@ -1,9 +1,9 @@
+import { useConfirm } from '@kubuno/sdk'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Input, Spinner, ConfirmDialog } from '@ui'
-import { useConfirm } from '@kubuno/sdk'
 import { Trash2, UserPlus } from 'lucide-react'
 import { wikiApi } from './api'
 

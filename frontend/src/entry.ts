@@ -1,3 +1,4 @@
+import { RouteRegistry, ExtensionRegistry, WaffleAppRegistry, FileTypeRegistry, FaviconRegistry, ModuleSettingsRegistry, useSidebarStore, useSearchStore, navigate, SDK_VERSION } from '@kubuno/sdk'
 /**
  * Wiki module bundle — loaded at runtime by the host. Shared specifiers
  * (react, zustand, i18next, @ui, @kubuno/sdk…) are resolved by the host import
@@ -5,18 +6,6 @@
  * host reject a contract mismatch.
  */
 import { lazy } from 'react'
-import {
-  RouteRegistry,
-  ExtensionRegistry,
-  WaffleAppRegistry,
-  FileTypeRegistry,
-  FaviconRegistry,
-  ModuleSettingsRegistry,
-  useSidebarStore,
-  useSearchStore,
-  navigate,
-  SDK_VERSION,
-} from '@kubuno/sdk'
 import './index.css'
 import './i18n'
 import { useWikiStore } from './store'
@@ -28,7 +17,7 @@ import WikiSidebarBody from './WikiSidebarBody'
 export const sdkVersion = SDK_VERSION
 
 export function register() {
-  FaviconRegistry.register('wiki', '/wiki-logo.svg')
+  FaviconRegistry.register('wiki', '/wiki-logo.png')
 
   WaffleAppRegistry.register('wiki', 'Wiki', [
     { id: 'wiki', label: 'Wiki', Icon: WikiLogo, path: '/wiki' },
