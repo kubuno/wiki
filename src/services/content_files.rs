@@ -2,7 +2,8 @@
 //!
 //! Kubuno wiki format — MIME `application/vnd.kubuno.wiki+json`, extension
 //! `.kbwik`, gzipped JSON. The database only keeps an index row (`pages`): the
-//! `file_id` reference, a truncated `preview` and the derived FTS `search_vector`.
+//! `file_id` reference, a truncated `preview` and the normalized search columns
+//! (`title_norm` / `body_norm`).
 //!
 //! One `.kbwik` file = one page, and it is fully self-contained: it carries the
 //! current source, the rendered HTML cache and the **whole revision history**.

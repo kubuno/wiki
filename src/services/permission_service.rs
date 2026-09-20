@@ -4,6 +4,7 @@
 //! - Shared wiki: the owner is `Owner`; other users get their `wiki_members.role`,
 //!   or `None` if they are not members.
 
+use kubuno_db::params;
 use uuid::Uuid;
 
 use crate::errors::{Result, WikiError};
@@ -12,9 +13,9 @@ use crate::models::wiki::Wiki;
 use crate::state::AppState;
 
 pub async fn load_wiki(state: &AppState, wiki_id: Uuid) -> Result<Wiki> {
-    sqlx::query_as::<_, Wiki>("SELECT * FROM wikis WHERE id = $1")
-        .bind(wiki_id)
-        .fetch_optional(&state.db)
+    state
+        .db
+        .fetch_optional_as::<Wiki>("SELECT * FROM wiki.wikis WHERE id = $1", params![wiki_id])
         .await?
         .ok_or_else(|| WikiError::NotFound("wiki".into()))
 }
@@ -26,13 +27,13 @@ pub async fn effective_role(state: &AppState, wiki: &Wiki, user_id: Uuid) -> Res
     if !wiki.is_shared {
         return Ok(Role::None);
     }
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM wiki_members WHERE wiki_id = $1 AND user_id = $2",
-    )
-    .bind(wiki.id)
-    .bind(user_id)
-    .fetch_optional(&state.db)
-    .await?;
+    let role: Option<String> = state
+        .db
+        .fetch_optional_scalar(
+            "SELECT role FROM wiki.wiki_members WHERE wiki_id = $1 AND user_id = $2",
+            params![wiki.id, user_id],
+        )
+        .await?;
     Ok(role.map(|r| Role::parse(&r)).unwrap_or(Role::None))
 }
 

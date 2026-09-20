@@ -9,6 +9,23 @@ number at release time, and CI publishes that section as the GitHub Release note
 
 ## [Unreleased]
 
+### Added
+
+- **Choice of database engine.** The wiki now runs on PostgreSQL, MySQL/MariaDB
+  or SQLite — the administrator picks the engine in configuration and a single
+  build connects to whichever is named, with no per-engine build. SQLite makes a
+  self-contained, server-less install possible.
+
+### Changed
+
+- **Full-text page search now behaves identically on every engine.** Search
+  keeps working the same way — a plural query still finds the singular (a search
+  for "chevaux" matches a page about a "cheval"), and an accent-free query still
+  finds accented words ("resume" finds "résumé"), with page titles ranked above
+  page bodies. It no longer depends on a PostgreSQL-only text-search feature.
+  Known limitation: the previous typo tolerance (matching a misspelling that is
+  close but not exact) is gone; inflected and accented queries still match.
+
 ### Security
 
 - **Input validation library updated.** The version in use carried

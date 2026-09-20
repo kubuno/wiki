@@ -10,6 +10,7 @@
 //!   7. heading anchors + table of contents
 //!   8. sanitize (ammonia)
 
+use kubuno_db::params;
 use regex::Regex;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -268,22 +269,26 @@ async fn eval_template(
 }
 
 async fn load_template_body(ctx: &Ctx<'_>, ns: &str, slug: &str) -> Result<Option<String>, WikiError> {
-    let row = sqlx::query_as::<_, (Uuid, Uuid)>(
-        "SELECT id, file_id FROM pages \
-         WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted",
-    )
-    .bind(ctx.wiki_id)
-    .bind(ns)
-    .bind(slug)
-    .fetch_optional(&ctx.state.db)
-    .await?;
+    let row = ctx
+        .state
+        .db
+        .fetch_optional_as::<(Uuid, Uuid)>(
+            "SELECT id, file_id FROM wiki.pages \
+             WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted",
+            params![ctx.wiki_id, ns, slug],
+        )
+        .await?;
 
     let Some((_id, file_id)) = row else { return Ok(None) };
 
     // storage owner of this wiki
-    let storage_owner: Uuid = sqlx::query_scalar("SELECT storage_owner_id FROM wikis WHERE id = $1")
-        .bind(ctx.wiki_id)
-        .fetch_one(&ctx.state.db)
+    let storage_owner: Uuid = ctx
+        .state
+        .db
+        .fetch_scalar::<Uuid>(
+            "SELECT storage_owner_id FROM wiki.wikis WHERE id = $1",
+            params![ctx.wiki_id],
+        )
         .await?;
 
     let env = content_files::read_page_file(ctx.state, storage_owner, file_id).await?;
@@ -437,14 +442,18 @@ async fn resolve_links(ctx: &Ctx<'_>, text: &str, out: &mut Vec<LinkRef>) -> Res
 }
 
 async fn page_exists(ctx: &Ctx<'_>, ns: &str, slug: &str) -> Result<bool, WikiError> {
-    let n: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM pages WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted",
-    )
-    .bind(ctx.wiki_id)
-    .bind(ns)
-    .bind(slug)
-    .fetch_one(&ctx.state.db)
-    .await?;
+    let count = ctx.state.db.backend().count_bigint("*");
+    let n: i64 = ctx
+        .state
+        .db
+        .fetch_scalar::<i64>(
+            &format!(
+                "SELECT {count} FROM wiki.pages \
+                 WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted"
+            ),
+            params![ctx.wiki_id, ns, slug],
+        )
+        .await?;
     Ok(n > 0)
 }
 

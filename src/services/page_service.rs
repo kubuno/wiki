@@ -4,8 +4,20 @@
 //! `pages` table is just an index. The link graph (`page_links`), category
 //! membership (`page_categories`) and the `recent_changes` feed are recomputed
 //! on every save inside a single transaction.
+//!
+//! Delta: pages are versioned (a `change_seq` per row) and SOFT-deleted (the
+//! `is_deleted` flag), so a deletion is just a `modified` change and pages never
+//! tombstone. Every insert / update / soft-delete / move takes a fresh page seq
+//! from `crate::sync` inside its transaction.
+//!
+//! Search: `title_norm` / `body_norm` hold the Snowball-French-stemmed,
+//! deaccented forms of the title and the preview, computed in Rust with
+//! `kubuno_db::search::normalize` at every write (the portable replacement for
+//! the old `setweight(to_tsvector('french', unaccent(...)))` trigger).
 
 use chrono::Utc;
+use kubuno_db::search::normalize;
+use kubuno_db::{new_id, params};
 use uuid::Uuid;
 
 use crate::errors::{Result, WikiError};
@@ -14,6 +26,7 @@ use crate::models::wiki::Wiki;
 use crate::services::content_files::{self, PageEnvelope, Revision};
 use crate::services::wiki_markup::{self, RenderResult};
 use crate::state::AppState;
+use crate::sync;
 
 pub struct RenderedPage {
     pub page:   Page,
@@ -41,26 +54,26 @@ fn trim_revisions(revisions: &mut Vec<Revision>, keep: u32) {
 }
 
 pub async fn list_pages(state: &AppState, wiki_id: Uuid) -> Result<Vec<PageSummary>> {
-    let rows = sqlx::query_as::<_, PageSummary>(
-        "SELECT id, namespace, title, slug, redirect_to, preview, byte_size, current_rev_at \
-         FROM pages WHERE wiki_id = $1 AND NOT is_deleted \
-         ORDER BY namespace, title",
-    )
-    .bind(wiki_id)
-    .fetch_all(&state.db)
-    .await?;
+    let rows = state
+        .db
+        .fetch_all_as::<PageSummary>(
+            "SELECT id, namespace, title, slug, redirect_to, preview, byte_size, current_rev_at \
+             FROM wiki.pages WHERE wiki_id = $1 AND NOT is_deleted \
+             ORDER BY namespace, title",
+            params![wiki_id],
+        )
+        .await?;
     Ok(rows)
 }
 
 async fn find_page(state: &AppState, wiki_id: Uuid, ns: &str, slug: &str) -> Result<Option<Page>> {
-    let row = sqlx::query_as::<_, Page>(
-        "SELECT * FROM pages WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted",
-    )
-    .bind(wiki_id)
-    .bind(ns)
-    .bind(slug)
-    .fetch_optional(&state.db)
-    .await?;
+    let row = state
+        .db
+        .fetch_optional_as::<Page>(
+            "SELECT * FROM wiki.pages WHERE wiki_id = $1 AND namespace = $2 AND slug = $3 AND NOT is_deleted",
+            params![wiki_id, ns, slug],
+        )
+        .await?;
     Ok(row)
 }
 
@@ -115,6 +128,9 @@ pub async fn save_page(
     let preview = content_files::make_preview(&req.content);
     let byte_size = req.content.len() as i32;
     let now = Utc::now();
+    // Normalized search columns (title = weight A, preview = weight B).
+    let title_norm = normalize(&title);
+    let body_norm = normalize(&preview);
 
     let existing = find_page(state, wiki.id, &ns, &slug).await?;
 
@@ -158,122 +174,131 @@ pub async fn save_page(
 
     // ── Index transaction. ──
     let mut tx = state.db.begin().await?;
+    let seq = sync::next_page_seq(&mut tx).await?;
 
     let page_id: Uuid = if let Some(p) = &existing {
-        sqlx::query(
-            "UPDATE pages SET title=$2, redirect_to=$3, preview=$4, byte_size=$5, \
-                current_author_id=$6, current_rev_at=$7 WHERE id=$1",
+        tx.execute(
+            "UPDATE wiki.pages SET title=$1, redirect_to=$2, preview=$3, byte_size=$4, \
+                current_author_id=$5, current_rev_at=$6, title_norm=$7, body_norm=$8, change_seq=$9 \
+             WHERE id=$10",
+            params![
+                &title,
+                render.redirect.as_deref(),
+                &preview,
+                byte_size,
+                author_id,
+                now,
+                &title_norm,
+                &body_norm,
+                seq,
+                p.id
+            ],
         )
-        .bind(p.id)
-        .bind(&title)
-        .bind(&render.redirect)
-        .bind(&preview)
-        .bind(byte_size)
-        .bind(author_id)
-        .bind(now)
-        .execute(&mut *tx)
         .await?;
         p.id
     } else {
-        let id: Uuid = sqlx::query_scalar(
-            "INSERT INTO pages (id, wiki_id, namespace, title, slug, file_id, redirect_to, preview, \
-                byte_size, current_author_id, current_rev_at) \
-             VALUES (COALESCE($11, uuid_generate_v4()),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+        let id = req.id.unwrap_or_else(new_id);
+        tx.execute(
+            "INSERT INTO wiki.pages (id, wiki_id, namespace, title, slug, file_id, redirect_to, preview, \
+                byte_size, current_author_id, current_rev_at, title_norm, body_norm, change_seq) \
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+            params![
+                id,
+                wiki.id,
+                &ns,
+                &title,
+                &slug,
+                file_id,
+                render.redirect.as_deref(),
+                &preview,
+                byte_size,
+                author_id,
+                now,
+                &title_norm,
+                &body_norm,
+                seq
+            ],
         )
-        .bind(wiki.id)
-        .bind(&ns)
-        .bind(&title)
-        .bind(&slug)
-        .bind(file_id)
-        .bind(&render.redirect)
-        .bind(&preview)
-        .bind(byte_size)
-        .bind(author_id)
-        .bind(now)
-        .bind(req.id)
-        .fetch_one(&mut *tx)
         .await?;
 
         // Resolve pending red links that pointed at this new page.
-        sqlx::query(
-            "UPDATE page_links SET target_page_id = $1 \
+        tx.execute(
+            "UPDATE wiki.page_links SET target_page_id = $1 \
              WHERE wiki_id = $2 AND target_namespace = $3 AND target_slug = $4 AND target_page_id IS NULL",
+            params![id, wiki.id, &ns, &slug],
         )
-        .bind(id)
-        .bind(wiki.id)
-        .bind(&ns)
-        .bind(&slug)
-        .execute(&mut *tx)
         .await?;
         id
     };
 
     // Rebuild outgoing links.
-    sqlx::query("DELETE FROM page_links WHERE source_page_id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
+    let link_ignore = state.db.backend().insert_ignore_prefix();
+    let link_nothing = state
+        .db
+        .backend()
+        .on_conflict_do_nothing(&["source_page_id", "target_namespace", "target_slug"]);
+    tx.execute("DELETE FROM wiki.page_links WHERE source_page_id = $1", params![page_id])
         .await?;
     for link in &render.links {
         if link.namespace == ns && link.slug == slug {
             continue; // ignore self-links
         }
-        let target_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM pages WHERE wiki_id=$1 AND namespace=$2 AND slug=$3 AND NOT is_deleted",
+        let target_id: Option<Uuid> = tx
+            .fetch_optional_scalar::<Uuid>(
+                "SELECT id FROM wiki.pages WHERE wiki_id=$1 AND namespace=$2 AND slug=$3 AND NOT is_deleted",
+                params![wiki.id, &link.namespace, &link.slug],
+            )
+            .await?;
+        tx.execute(
+            &format!(
+                "INSERT {link_ignore}INTO wiki.page_links \
+                    (source_page_id, wiki_id, target_namespace, target_title, target_slug, target_page_id) \
+                 VALUES ($1,$2,$3,$4,$5,$6){link_nothing}"
+            ),
+            params![page_id, wiki.id, &link.namespace, &link.title, &link.slug, target_id],
         )
-        .bind(wiki.id)
-        .bind(&link.namespace)
-        .bind(&link.slug)
-        .fetch_optional(&mut *tx)
-        .await?;
-        sqlx::query(
-            "INSERT INTO page_links (source_page_id, wiki_id, target_namespace, target_title, target_slug, target_page_id) \
-             VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",
-        )
-        .bind(page_id)
-        .bind(wiki.id)
-        .bind(&link.namespace)
-        .bind(&link.title)
-        .bind(&link.slug)
-        .bind(target_id)
-        .execute(&mut *tx)
         .await?;
     }
 
     // Rebuild categories.
-    sqlx::query("DELETE FROM page_categories WHERE page_id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
+    let cat_ignore = state.db.backend().insert_ignore_prefix();
+    let cat_nothing = state
+        .db
+        .backend()
+        .on_conflict_do_nothing(&["page_id", "category_slug"]);
+    tx.execute("DELETE FROM wiki.page_categories WHERE page_id = $1", params![page_id])
         .await?;
     for cat in &render.categories {
-        sqlx::query(
-            "INSERT INTO page_categories (page_id, wiki_id, category_title, category_slug) \
-             VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",
+        tx.execute(
+            &format!(
+                "INSERT {cat_ignore}INTO wiki.page_categories (page_id, wiki_id, category_title, category_slug) \
+                 VALUES ($1,$2,$3,$4){cat_nothing}"
+            ),
+            params![page_id, wiki.id, &cat.title, &cat.slug],
         )
-        .bind(page_id)
-        .bind(wiki.id)
-        .bind(&cat.title)
-        .bind(&cat.slug)
-        .execute(&mut *tx)
         .await?;
     }
 
     // Recent changes entry.
     let byte_delta = byte_size - existing.as_ref().map(|p| p.byte_size).unwrap_or(0);
-    sqlx::query(
-        "INSERT INTO recent_changes (wiki_id, page_id, namespace, title, author_id, author_name, comment, minor, change_type, byte_delta) \
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+    tx.execute(
+        "INSERT INTO wiki.recent_changes \
+            (id, wiki_id, page_id, namespace, title, author_id, author_name, comment, minor, change_type, byte_delta) \
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+        params![
+            new_id(),
+            wiki.id,
+            page_id,
+            &ns,
+            &title,
+            author_id,
+            author_name,
+            &req.comment,
+            req.minor,
+            change_type,
+            byte_delta
+        ],
     )
-    .bind(wiki.id)
-    .bind(page_id)
-    .bind(&ns)
-    .bind(&title)
-    .bind(author_id)
-    .bind(author_name)
-    .bind(&req.comment)
-    .bind(req.minor)
-    .bind(change_type)
-    .bind(byte_delta)
-    .execute(&mut *tx)
     .await?;
 
     tx.commit().await?;
@@ -297,41 +322,51 @@ pub async fn save_page(
 }
 
 pub async fn delete_page(state: &AppState, wiki: &Wiki, author_id: Uuid, page_id: Uuid) -> Result<()> {
-    let page = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE id = $1 AND wiki_id = $2")
-        .bind(page_id)
-        .bind(wiki.id)
-        .fetch_optional(&state.db)
+    let page = state
+        .db
+        .fetch_optional_as::<Page>(
+            "SELECT * FROM wiki.pages WHERE id = $1 AND wiki_id = $2",
+            params![page_id, wiki.id],
+        )
         .await?
         .ok_or_else(|| WikiError::NotFound("page".into()))?;
 
     let mut tx = state.db.begin().await?;
-    // Mark deleted; orphan inbound links (they become red links again).
-    sqlx::query("UPDATE pages SET is_deleted = TRUE WHERE id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE page_links SET target_page_id = NULL WHERE target_page_id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("DELETE FROM page_links WHERE source_page_id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("DELETE FROM page_categories WHERE page_id = $1")
-        .bind(page_id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "INSERT INTO recent_changes (wiki_id, page_id, namespace, title, author_id, change_type) \
-         VALUES ($1,$2,$3,$4,$5,'delete')",
+    let seq = sync::next_page_seq(&mut tx).await?;
+    // Soft-delete: a `modified` change carrying is_deleted=true (no tombstone).
+    tx.execute(
+        "UPDATE wiki.pages SET is_deleted = $1, change_seq = $2 WHERE id = $3",
+        params![true, seq, page_id],
     )
-    .bind(wiki.id)
-    .bind(page_id)
-    .bind(&page.namespace)
-    .bind(&page.title)
-    .bind(author_id)
-    .execute(&mut *tx)
+    .await?;
+    // Orphan inbound links (they become red links again).
+    tx.execute(
+        "UPDATE wiki.page_links SET target_page_id = NULL WHERE target_page_id = $1",
+        params![page_id],
+    )
+    .await?;
+    tx.execute("DELETE FROM wiki.page_links WHERE source_page_id = $1", params![page_id])
+        .await?;
+    tx.execute("DELETE FROM wiki.page_categories WHERE page_id = $1", params![page_id])
+        .await?;
+    tx.execute(
+        "INSERT INTO wiki.recent_changes \
+            (id, wiki_id, page_id, namespace, title, author_id, author_name, comment, minor, change_type, byte_delta) \
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+        params![
+            new_id(),
+            wiki.id,
+            page_id,
+            &page.namespace,
+            &page.title,
+            author_id,
+            "",
+            "",
+            false,
+            "delete",
+            0i32
+        ],
+    )
     .await?;
     tx.commit().await?;
 
@@ -347,10 +382,12 @@ pub async fn move_page(
     page_id: Uuid,
     new_ref: &str,
 ) -> Result<Page> {
-    let page = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE id = $1 AND wiki_id = $2 AND NOT is_deleted")
-        .bind(page_id)
-        .bind(wiki.id)
-        .fetch_optional(&state.db)
+    let page = state
+        .db
+        .fetch_optional_as::<Page>(
+            "SELECT * FROM wiki.pages WHERE id = $1 AND wiki_id = $2 AND NOT is_deleted",
+            params![page_id, wiki.id],
+        )
         .await?
         .ok_or_else(|| WikiError::NotFound("page".into()))?;
 
@@ -361,33 +398,42 @@ pub async fn move_page(
         return Err(WikiError::Conflict("target title already exists".into()));
     }
 
-    sqlx::query("UPDATE pages SET namespace=$2, title=$3, slug=$4 WHERE id=$1")
-        .bind(page_id)
-        .bind(&new_ns)
-        .bind(&new_title)
-        .bind(&new_slug)
-        .execute(&state.db)
-        .await?;
+    let title_norm = normalize(&new_title);
+    let mut tx = state.db.begin().await?;
+    let seq = sync::next_page_seq(&mut tx).await?;
+    tx.execute(
+        "UPDATE wiki.pages SET namespace=$1, title=$2, slug=$3, title_norm=$4, change_seq=$5 WHERE id=$6",
+        params![&new_ns, &new_title, &new_slug, &title_norm, seq, page_id],
+    )
+    .await?;
+    tx.execute(
+        "INSERT INTO wiki.recent_changes \
+            (id, wiki_id, page_id, namespace, title, author_id, author_name, comment, minor, change_type, byte_delta) \
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+        params![
+            new_id(),
+            wiki.id,
+            page_id,
+            &new_ns,
+            &new_title,
+            author_id,
+            "",
+            "",
+            false,
+            "move",
+            0i32
+        ],
+    )
+    .await?;
+    tx.commit().await?;
 
-    // Update the stored envelope title and re-resolve who links here.
+    // Update the stored envelope title and rename the underlying file.
     if let Ok(mut env) = content_files::read_page_file(state, wiki.storage_owner_id, page.file_id).await {
         env.namespace = new_ns.clone();
         env.title = new_title.clone();
         let _ = content_files::write_page_file(state, wiki.storage_owner_id, page.file_id, &env).await;
     }
     content_files::rename_page_file(state, wiki.storage_owner_id, page.file_id, &new_title).await;
-
-    sqlx::query(
-        "INSERT INTO recent_changes (wiki_id, page_id, namespace, title, author_id, change_type) \
-         VALUES ($1,$2,$3,$4,$5,'move')",
-    )
-    .bind(wiki.id)
-    .bind(page_id)
-    .bind(&new_ns)
-    .bind(&new_title)
-    .bind(author_id)
-    .execute(&state.db)
-    .await?;
 
     find_page(state, wiki.id, &new_ns, &new_slug)
         .await?
@@ -397,10 +443,12 @@ pub async fn move_page(
 // ── History (read from the .kbwik file) ─────────────────────────────────────
 
 pub async fn history(state: &AppState, wiki: &Wiki, page_id: Uuid) -> Result<Vec<serde_json::Value>> {
-    let page = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE id = $1 AND wiki_id = $2")
-        .bind(page_id)
-        .bind(wiki.id)
-        .fetch_optional(&state.db)
+    let page = state
+        .db
+        .fetch_optional_as::<Page>(
+            "SELECT * FROM wiki.pages WHERE id = $1 AND wiki_id = $2",
+            params![page_id, wiki.id],
+        )
         .await?
         .ok_or_else(|| WikiError::NotFound("page".into()))?;
     let env = content_files::read_page_file(state, wiki.storage_owner_id, page.file_id).await?;
@@ -424,10 +472,12 @@ pub async fn history(state: &AppState, wiki: &Wiki, page_id: Uuid) -> Result<Vec
 }
 
 pub async fn revision_content(state: &AppState, wiki: &Wiki, page_id: Uuid, rev_id: Uuid) -> Result<Revision> {
-    let page = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE id = $1 AND wiki_id = $2")
-        .bind(page_id)
-        .bind(wiki.id)
-        .fetch_optional(&state.db)
+    let page = state
+        .db
+        .fetch_optional_as::<Page>(
+            "SELECT * FROM wiki.pages WHERE id = $1 AND wiki_id = $2",
+            params![page_id, wiki.id],
+        )
         .await?
         .ok_or_else(|| WikiError::NotFound("page".into()))?;
     let env = content_files::read_page_file(state, wiki.storage_owner_id, page.file_id).await?;
@@ -448,31 +498,33 @@ pub struct RecentPage {
 }
 
 pub async fn recent_pages(state: &AppState, user_id: Uuid, limit: i64) -> Result<Vec<RecentPage>> {
-    let rows = sqlx::query_as::<_, RecentPage>(
-        "SELECT p.wiki_id, p.namespace, p.title, p.slug, p.current_rev_at \
-         FROM pages p \
-         JOIN wikis w ON w.id = p.wiki_id \
-         LEFT JOIN wiki_members m ON m.wiki_id = w.id AND m.user_id = $1 \
-         WHERE NOT p.is_deleted AND (w.owner_id = $1 OR m.user_id = $1) \
-         ORDER BY p.current_rev_at DESC \
-         LIMIT $2",
-    )
-    .bind(user_id)
-    .bind(limit.clamp(1, 50))
-    .fetch_all(&state.db)
-    .await?;
+    // `user_id` appears three times; bound once per occurrence for portability.
+    let rows = state
+        .db
+        .fetch_all_as::<RecentPage>(
+            "SELECT p.wiki_id, p.namespace, p.title, p.slug, p.current_rev_at \
+             FROM wiki.pages p \
+             JOIN wiki.wikis w ON w.id = p.wiki_id \
+             LEFT JOIN wiki.wiki_members m ON m.wiki_id = w.id AND m.user_id = $1 \
+             WHERE NOT p.is_deleted AND (w.owner_id = $2 OR m.user_id = $3) \
+             ORDER BY p.current_rev_at DESC \
+             LIMIT $4",
+            params![user_id, user_id, user_id, limit.clamp(1, 50)],
+        )
+        .await?;
     Ok(rows)
 }
 
 /// Resolves a page by its underlying `.kbwik` file id (FileTypeRegistry "open").
 pub async fn locate_by_file(state: &AppState, file_id: Uuid) -> Result<(Uuid, String, String)> {
-    let row = sqlx::query_as::<_, (Uuid, String, String)>(
-        "SELECT wiki_id, namespace, title FROM pages WHERE file_id = $1 AND NOT is_deleted",
-    )
-    .bind(file_id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| WikiError::NotFound("page".into()))?;
+    let row = state
+        .db
+        .fetch_optional_as::<(Uuid, String, String)>(
+            "SELECT wiki_id, namespace, title FROM wiki.pages WHERE file_id = $1 AND NOT is_deleted",
+            params![file_id],
+        )
+        .await?
+        .ok_or_else(|| WikiError::NotFound("page".into()))?;
     Ok(row)
 }
 

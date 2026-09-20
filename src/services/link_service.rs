@@ -1,5 +1,6 @@
 //! Internal link graph queries: backlinks ("what links here").
 
+use kubuno_db::params;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -16,15 +17,15 @@ pub struct Backlink {
 
 /// Pages that link to the given page (resolved links only).
 pub async fn backlinks(state: &AppState, wiki_id: Uuid, page_id: Uuid) -> Result<Vec<Backlink>> {
-    let rows = sqlx::query_as::<_, Backlink>(
-        "SELECT p.id, p.namespace, p.title, p.slug \
-         FROM page_links l JOIN pages p ON p.id = l.source_page_id \
-         WHERE l.wiki_id = $1 AND l.target_page_id = $2 AND NOT p.is_deleted \
-         ORDER BY p.namespace, p.title",
-    )
-    .bind(wiki_id)
-    .bind(page_id)
-    .fetch_all(&state.db)
-    .await?;
+    let rows = state
+        .db
+        .fetch_all_as::<Backlink>(
+            "SELECT p.id, p.namespace, p.title, p.slug \
+             FROM wiki.page_links l JOIN wiki.pages p ON p.id = l.source_page_id \
+             WHERE l.wiki_id = $1 AND l.target_page_id = $2 AND NOT p.is_deleted \
+             ORDER BY p.namespace, p.title",
+            params![wiki_id, page_id],
+        )
+        .await?;
     Ok(rows)
 }

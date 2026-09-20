@@ -4,11 +4,11 @@ use kubuno_wiki::{
     config::Settings,
     router,
     state::AppState,
+    SCHEMA,
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -167,37 +167,25 @@ async fn main() -> Result<()> {
     // Security: forbid any process execution on the host (see kubuno-seccomp).
     kubuno_seccomp::lock_down_process_execution("wiki");
 
-    // PostgreSQL pool
-    let opts = settings.database.connect_options()?
-        .options([("search_path", "wiki,public")]);
-    let pool = PgPoolOptions::new()
-        .max_connections(settings.database.max_connections)
-        .min_connections(settings.database.min_connections)
-        .acquire_timeout(settings.database.connect_timeout)
-        .connect_with(opts)
+    // Database pool. The engine (PostgreSQL / MySQL / SQLite) is the
+    // administrator's choice in `[database] engine`, read at run time; `connect`
+    // also creates the module's namespace (PostgreSQL schema, MySQL database, or
+    // the ATTACHed SQLite file).
+    let pool = kubuno_db::connect(&settings.database, SCHEMA)
         .await
-        .context("PostgreSQL connection")?;
+        .context("Database connection")?;
 
-    // Migrations
+    // Migrations: the set for the pool's engine, kept inside the module's own
+    // namespace (the table PostgreSQL already used through its search_path).
     if settings.database.run_migrations {
-        sqlx::query("CREATE SCHEMA IF NOT EXISTS wiki")
-            .execute(&pool)
-            .await
-            .context("Creating wiki schema")?;
-
-        let migration_opts = settings.database.connect_options()?
-            .options([("search_path", "wiki,public")]);
-        let migration_pool = PgPoolOptions::new()
-            .max_connections(1)
-            .acquire_timeout(settings.database.connect_timeout)
-            .connect_with(migration_opts)
-            .await
-            .context("Migration pool")?;
-
-        sqlx::migrate!("./migrations")
-            .run(&migration_pool)
-            .await
-            .context("Migrations")?;
+        kubuno_db::migrations!(
+            "./migrations/postgres",
+            "./migrations/mysql",
+            "./migrations/sqlite",
+        )
+        .run(&pool, SCHEMA)
+        .await
+        .context("Migrations")?;
     }
 
     let http = Client::new();
