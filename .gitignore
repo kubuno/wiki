@@ -39,8 +39,7 @@ nohup.out
 *.p12
 *.keystore
 
-# État local de l'agent / éditeurs
-/.claude/
+# Local editor state
 .DS_Store
 .idea/
 .vscode/
@@ -54,7 +53,3 @@ node_modules
 # TypeScript — état de build incrémental
 *.tsbuildinfo
 
-# Claude Code working files (agent instructions & memory) — never published
-CLAUDE.md
-AGENTS.md
-.claude/

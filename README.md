@@ -23,28 +23,35 @@ Wiki is a module for [Kubuno](https://github.com/kubuno/core), the self-hosted, 
 
 ---
 
-## ✨ Features
+## Screenshots
 
-- 📚 **Personal & shared wikis** — keep a private knowledge base in your own Drive, or open a shared, collaborative wiki with per-member roles (`admin` / `editor` / `reader`).
-- 🖋️ **Extended Markdown + wikitext** — CommonMark (tables, footnotes, task lists…) alongside classic wiki conventions: `[[internal links]]`, `== headings ==`, `'''bold'''` / `''italic''`, `<ref>` references, `#REDIRECT`, and an automatic table of contents.
-- 🧩 **Templates & transclusion** — `{{Template|positional|named=value}}` with `{{{1|default}}}` parameters, the `{{#if}}`, `{{#ifeq}}` and `{{#switch}}` parser functions, and magic words (`{{PAGENAME}}`, `{{NAMESPACE}}`, `{{FULLPAGENAME}}`), bounded by a configurable transclusion depth.
-- 🗂️ **Namespaces & talk pages** — `Main`, `Talk`, `User`, `Wiki`, `Template`, `Category`, `File` and `Help` (with French aliases).
-- 🏷️ **Categories & special pages** — `[[Category:…]]` membership plus *All pages*, *Recent changes*, *Wanted pages* (red links), *Orphaned pages* and *Categories*.
-- 🔗 **Links & navigation** — red links for missing pages, "what links here" backlinks, redirects, and full-text search (French-aware, accent-insensitive).
-- 🕔 **Revision history** — every save is recorded inside the `.kbwik` file and browsable in the history viewer; an administrator can cap how many revisions each page keeps.
-- 🔄 **Local-first delta sync** — `GET /wikis/delta` and `GET /pages/delta` stream owner-scoped changes past a monotonic cursor (member rows and full `.kbwik` envelopes, with tombstones for hard deletes), and creation endpoints accept client-minted UUIDs, so an offline-capable client can mirror a personal wiki and replay verbatim.
-- 🎛️ **Administrable by policy** — control who may create a personal or a shared wiki, and cap the maximum page source size.
+![Browsing a wiki and its recent pages](.github/screenshots/wiki-browse.png)
 
-## 🏗️ Architecture
+<sub>Browsing a wiki and its recent pages</sub>
+
+## Features
+
+- **Personal & shared wikis** — keep a private knowledge base in your own Drive, or open a shared, collaborative wiki with per-member roles (`admin` / `editor` / `reader`).
+- **Extended Markdown + wikitext** — CommonMark (tables, footnotes, task lists…) alongside classic wiki conventions: `[[internal links]]`, `== headings ==`, `'''bold'''` / `''italic''`, `<ref>` references, `#REDIRECT`, and an automatic table of contents.
+- **Templates & transclusion** — `{{Template|positional|named=value}}` with `{{{1|default}}}` parameters, the `{{#if}}`, `{{#ifeq}}` and `{{#switch}}` parser functions, and magic words (`{{PAGENAME}}`, `{{NAMESPACE}}`, `{{FULLPAGENAME}}`), bounded by a configurable transclusion depth.
+- **Namespaces & talk pages** — `Main`, `Talk`, `User`, `Wiki`, `Template`, `Category`, `File` and `Help` (with French aliases).
+- **Categories & special pages** — `[[Category:…]]` membership plus *All pages*, *Recent changes*, *Wanted pages* (red links), *Orphaned pages* and *Categories*.
+- **Links & navigation** — red links for missing pages, "what links here" backlinks, redirects, and full-text search that behaves the same on every database engine: plural and singular forms match each other, accents are ignored, and title matches rank above body matches.
+- **Revision history** — every save is recorded inside the `.kbwik` file and browsable in the history viewer; an administrator can cap how many revisions each page keeps.
+- **Local-first delta sync** — `GET /wikis/delta` and `GET /pages/delta` stream owner-scoped changes past a monotonic cursor (member rows and full `.kbwik` envelopes, with tombstones for hard deletes), and creation endpoints accept client-minted UUIDs, so an offline-capable client can mirror a personal wiki and replay verbatim.
+- **Your choice of database** — runs on PostgreSQL, MySQL/MariaDB or SQLite: a single build connects to whichever engine the instance is configured with, and SQLite makes a self-contained, server-less install possible.
+- **Administrable by policy** — control who may create a personal or a shared wiki, and cap the maximum page source size.
+
+## Architecture
 
 Like every Kubuno app, Wiki is an **independent process**, not a library linked into the core. It registers with the [core](https://github.com/kubuno/core) at startup; the core then proxies its routes (`/api/v1/wiki/*`), distributes platform events to it, serves its runtime-loaded React frontend bundle and manages its lifecycle.
 
 - **Port** — the backend listens on `127.0.0.1:3120` and is reached only through the core's reverse proxy.
-- **Backend** — `src/`: Axum + SQLx over PostgreSQL, confined to the `wiki` schema (an index only); migrations in `migrations/`. Page content lives in `.kbwik` files (`application/vnd.kubuno.wiki+json`) stored through the Drive module; shared wikis are owned by a reserved system user. The rendering pipeline protects code, expands templates and magic words, resolves categories and links, renders Markdown, builds the TOC and sanitises the result.
+- **Backend** — `src/`: Axum + SQLx through the shared `kubuno-db` layer — PostgreSQL, MySQL/MariaDB or SQLite, chosen at run time — with its data (an index only) kept in its own `wiki` namespace; migrations in `migrations/`. Page content lives in `.kbwik` files (`application/vnd.kubuno.wiki+json`) stored through the Drive module; shared wikis are owned by a reserved system user. The rendering pipeline protects code, expands templates and magic words, resolves categories and links, renders Markdown, builds the TOC and sanitises the result.
 - **Frontend** — `frontend/`: a React 19 bundle built to `entry.js` + `entry.css`, consuming `@kubuno/sdk`, `@ui` (`@kubuno/ui`) and `@kubuno/drive`. At runtime those specifiers are `external` and resolved by the host's import map to its single shared instances; the npm packages are used only for building and type-checking.
 - **Trust boundary** — proxied requests are authenticated from a signed `X-Kubuno-Auth` token minted by the core (see `kubuno-modauth`), never from plain `X-Kubuno-User-*` headers.
 
-## 📦 Install
+## Install
 
 The easiest way to self-host a full Kubuno instance (core + every module) is the **all-in-one Docker image** (`ghcr.io/kubuno/kubuno`), which already bundles this module — see **[kubuno/docker](https://github.com/kubuno/docker)** for `docker compose` instructions.
 
@@ -56,9 +63,9 @@ sudo kubuno modules:install dist/wiki-<version>-<os>-<arch>.kbpkg
 sudo systemctl restart kubuno     # the core loads the module on (re)start
 ```
 
-## 🛠️ Build & development
+## Build & development
 
-**Requirements:** Rust ≥ 1.82, Node.js ≥ 24, PostgreSQL 16. No `kubuno/core` checkout is needed — shared Rust crates come from tagged git dependencies, and the `@kubuno/*` frontend libraries from the public npm scope.
+**Requirements:** Rust ≥ 1.82, Node.js ≥ 24, and a database — PostgreSQL 16, MySQL/MariaDB or SQLite. No `kubuno/core` checkout is needed — shared Rust crates come from tagged git dependencies, and the `@kubuno/*` frontend libraries from the public npm scope.
 
 ```bash
 cargo build --release                     # → target/release/kubuno-wiki
@@ -75,14 +82,14 @@ bash ../_tools/deploy_local.sh wiki             # backend + frontend
 bash ../_tools/deploy_local.sh wiki --frontend  # frontend only (fastest)
 ```
 
-## 📦 Tech stack
+## Tech stack
 
-Rust 2021 · Axum 0.7 · Tokio · SQLx 0.8 (PostgreSQL 16, schema `wiki`) · `ammonia` HTML sanitisation · `.kbwik` files via Drive — React 19 · TypeScript · Vite · Tailwind CSS v4 · Zustand · React Query, on the shared `@kubuno/sdk`, `@ui` and `@kubuno/drive` surfaces.
+Rust 2021 · Axum 0.7 · Tokio · SQLx 0.9 via `kubuno-db` (PostgreSQL 16 · MySQL/MariaDB · SQLite) · `ammonia` HTML sanitisation · `.kbwik` files via Drive — React 19 · TypeScript · Vite · Tailwind CSS v4 · Zustand · React Query, on the shared `@kubuno/sdk`, `@ui` and `@kubuno/drive` surfaces.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome. Please open an issue to discuss any significant change before submitting a pull request.
 
-## 📄 License
+## License
 
 [AGPL-3.0-or-later](LICENSE) © Kubuno contributors.
