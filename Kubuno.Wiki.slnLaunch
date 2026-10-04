@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Wiki (Kubuno Core + browser)",
+    "Projects": [
+      {
+        "Path": "Kubuno.Wiki.Server.rsproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "frontend\\Kubuno.Wiki.Web.esproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
