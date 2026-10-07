@@ -47,8 +47,9 @@ Wiki is a module for [Kubuno](https://github.com/kubuno/core), the self-hosted, 
 Like every Kubuno app, Wiki is an **independent process**, not a library linked into the core. It registers with the [core](https://github.com/kubuno/core) at startup; the core then proxies its routes (`/api/v1/wiki/*`), distributes platform events to it, serves its runtime-loaded React frontend bundle and manages its lifecycle.
 
 - **Port** — the backend listens on `127.0.0.1:3120` and is reached only through the core's reverse proxy.
-- **Backend** — `src/`: Axum + SQLx through the shared `kubuno-db` layer — PostgreSQL, MySQL/MariaDB or SQLite, chosen at run time — with its data (an index only) kept in its own `wiki` namespace; migrations in `migrations/`. Page content lives in `.kbwik` files (`application/vnd.kubuno.wiki+json`) stored through the Drive module; shared wikis are owned by a reserved system user. The rendering pipeline protects code, expands templates and magic words, resolves categories and links, renders Markdown, builds the TOC and sanitises the result.
-- **Frontend** — `frontend/`: a React 19 bundle built to `entry.js` + `entry.css`, consuming `@kubuno/sdk`, `@ui` (`@kubuno/ui`) and `@kubuno/drive`. At runtime those specifiers are `external` and resolved by the host's import map to its single shared instances; the npm packages are used only for building and type-checking.
+- **Server** — `server/`: Axum + SQLx through the shared `kubuno-db` layer — PostgreSQL, MySQL/MariaDB or SQLite, chosen at run time — with its data (an index only) kept in its own `wiki` namespace; migrations in `server/migrations/`. Page content lives in `.kbwik` files (`application/vnd.kubuno.wiki+json`) stored through the Drive module; shared wikis are owned by a reserved system user. The rendering pipeline protects code, expands templates and magic words, resolves categories and links, renders Markdown, builds the TOC and sanitises the result.
+- **Web** — `web/`: a React 19 bundle built to `entry.js` + `entry.css`, consuming `@kubuno/sdk`, `@ui` (`@kubuno/ui`) and `@kubuno/drive`. At runtime those specifiers are `external` and resolved by the host's import map to its single shared instances; the npm packages are used only for building and type-checking.
+- **Mobile** — `mobile/`: reserved for the mobile apps (see `mobile/README.md`).
 - **Trust boundary** — proxied requests are authenticated from a signed `X-Kubuno-Auth` token minted by the core (see `kubuno-modauth`), never from plain `X-Kubuno-User-*` headers.
 
 ## Install
@@ -68,8 +69,8 @@ sudo systemctl restart kubuno     # the core loads the module on (re)start
 **Requirements:** Rust ≥ 1.82, Node.js ≥ 24, and a database — PostgreSQL 16, MySQL/MariaDB or SQLite. No `kubuno/core` checkout is needed — shared Rust crates come from tagged git dependencies, and the `@kubuno/*` frontend libraries from the public npm scope.
 
 ```bash
-cargo build --release                     # → target/release/kubuno-wiki
-cd frontend && npm ci && npm run build     # → dist/{entry.js, entry.css}
+cd server && cargo build --release        # → server/target/release/kubuno-wiki
+cd web && npm ci && npm run build          # → web/dist/{entry.js, entry.css}
 
 bash build_kbpkg.sh                        # → dist/wiki-<version>-<os>-<arch>.kbpkg
 bash build_kbpkg.sh --install              # build, install into the module store, restart

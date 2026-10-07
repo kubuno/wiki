@@ -3,11 +3,11 @@
     "Name": "Wiki (Kubuno Core + browser)",
     "Projects": [
       {
-        "Path": "Kubuno.Wiki.Server.rsproj",
+        "Path": "server\\Kubuno.Wiki.Server.rsproj",
         "Action": "Start"
       },
       {
-        "Path": "frontend\\Kubuno.Wiki.Web.esproj",
+        "Path": "web\\Kubuno.Wiki.Web.esproj",
         "Action": "Start"
       }
     ]
