@@ -36,7 +36,7 @@ pub struct RenderedPage {
 
 /// Applies the instance's revision-retention window to a page's history.
 ///
-/// Revisions are appended, so the head of the vector is the oldest one — that is
+/// Revisions are appended, so the head of the vector is the oldest one - that is
 /// what a retention window drops. `keep == 0` means "keep everything", which is
 /// the default: forgetting history must be an explicit decision, never one an
 /// administrator makes by leaving a field alone.
@@ -557,7 +557,7 @@ mod tests {
         let mut revs: Vec<Revision> = (1..=5).map(rev).collect();
         trim_revisions(&mut revs, 2);
         assert_eq!(revs.len(), 2);
-        // 4 and 5 survive — the current content is always the last one.
+        // 4 and 5 survive - the current content is always the last one.
         assert_eq!(revs[0].rev_id, Uuid::from_u128(4));
         assert_eq!(revs[1].rev_id, Uuid::from_u128(5));
     }

@@ -26,7 +26,7 @@ pub async fn create(
     Json(req): Json<CreateWikiRequest>,
 ) -> Result<Json<Value>> {
     // Instance policy, checked before anything is written: who may open a space,
-    // and — separately — who may open a SHARED one.
+    // and - separately - who may open a SHARED one.
     let cfg = state.instance();
     if !cfg.wiki_creation.allows(user.is_admin()) {
         return Err(WikiError::Forbidden);

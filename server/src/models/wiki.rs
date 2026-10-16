@@ -30,7 +30,7 @@ pub struct WikiView {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateWikiRequest {
-    /// Optional client-minted id (local-first sync replay) — honoured verbatim.
+    /// Optional client-minted id (local-first sync replay) - honoured verbatim.
     #[serde(default)]
     pub id: Option<Uuid>,
     pub name:        String,

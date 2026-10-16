@@ -115,7 +115,7 @@ export default function PageView() {
             {revisions.map(r => (
               <li key={r.rev_id} className="px-3 py-2 text-sm flex items-center gap-2">
                 <span className="text-text-primary">{new Date(r.ts).toLocaleString()}</span>
-                <span className="text-text-secondary">· {r.author_name || '—'}</span>
+                <span className="text-text-secondary">· {r.author_name || '-'}</span>
                 {r.minor && <span className="text-xs text-text-tertiary">· m</span>}
                 {r.comment && <span className="text-text-tertiary italic truncate">· {r.comment}</span>}
                 <span className="ml-auto text-xs text-text-tertiary">{r.size} B</span>

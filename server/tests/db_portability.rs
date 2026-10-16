@@ -1,5 +1,5 @@
 //! Runs the wiki module's own migrations and delta/search primitives against a
-//! real server of **each** engine, from a single compiled binary — the proof
+//! real server of **each** engine, from a single compiled binary - the proof
 //! that the engine is a run-time choice, not a build-time one, and that the two
 //! recently-ported primitives (the change journal and the normalized full-text
 //! search) behave identically on all of them.

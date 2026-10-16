@@ -7,7 +7,7 @@
 //! The wiki change feed comes from `kubuno_db::journal::changes_since` (the
 //! portable `live UNION ALL tombstones`); pages are owner-scoped through a join
 //! to `wikis` and carry no tombstone, so they are read directly. The row bodies
-//! are reselected as typed structs and serialised in Rust — no PostgreSQL-only
+//! are reselected as typed structs and serialised in Rust - no PostgreSQL-only
 //! `to_jsonb`.
 //!
 //! Scope: personal wikis (owner = requester) and their pages. Shared-wiki sync
@@ -50,7 +50,7 @@ struct CategoryRow {
     slug:  String,
 }
 
-/// GET /wikis/delta — the requester's wikis + inline members, with tombstones.
+/// GET /wikis/delta - the requester's wikis + inline members, with tombstones.
 pub async fn wikis_delta(
     State(state): State<AppState>,
     Extension(user): Extension<WikiUser>,
@@ -119,7 +119,7 @@ struct PageDeltaRow {
     storage_owner_id: Uuid,
 }
 
-/// GET /pages/delta — pages of the requester's wikis, each with its inline
+/// GET /pages/delta - pages of the requester's wikis, each with its inline
 /// `.kbwik` envelope and category rows. Soft-deleted pages ride as `is_deleted`.
 pub async fn pages_delta(
     State(state): State<AppState>,

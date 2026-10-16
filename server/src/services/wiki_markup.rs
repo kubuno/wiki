@@ -237,7 +237,7 @@ async fn eval_template(
         }
     }
 
-    // Load template body (Template namespace) — cached per render.
+    // Load template body (Template namespace) - cached per render.
     let (ns, title) = split_namespace(name);
     let lookup_ns = if ns == "Main" { "Template".to_string() } else { ns };
     let slug = slugify(&title);

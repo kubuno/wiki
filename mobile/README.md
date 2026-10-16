@@ -1,4 +1,4 @@
-# Kubuno Wiki — mobile apps
+# Kubuno Wiki - mobile apps
 
 Reserved for the mobile clients of the Wiki module, organised like the other platforms of this repository:
 

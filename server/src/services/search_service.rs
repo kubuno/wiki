@@ -10,7 +10,7 @@
 //! `rank` is recomputed in Rust for the (already ordered) rows it returns, so
 //! the response keeps its shape.
 //!
-//! Reservation: `pg_trgm`'s typo tolerance is gone — a `LIKE '%stem%'` needs the
+//! Reservation: `pg_trgm`'s typo tolerance is gone - a `LIKE '%stem%'` needs the
 //! stem to appear as a substring. Stemming still folds inflections and the
 //! normalizer folds accents, so inflected and accented queries still match.
 
@@ -35,7 +35,7 @@ pub struct SearchHit {
     pub slug:      String,
     pub preview:   String,
     /// Relevance score: sum of the weight class of each query term found, higher
-    /// first — the portable stand-in for `ts_rank`.
+    /// first - the portable stand-in for `ts_rank`.
     pub rank:      i64,
 }
 

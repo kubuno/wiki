@@ -59,7 +59,7 @@ export default function WikiHome() {
               >
                 {c.namespace === 'Main' ? c.title : `${c.namespace}:${c.title}`}
               </button>
-              <span className="text-text-tertiary text-xs">· {t(`change_${c.change_type}`)} · {c.author_name || '—'}</span>
+              <span className="text-text-tertiary text-xs">· {t(`change_${c.change_type}`)} · {c.author_name || '-'}</span>
             </li>
           ))}
         </ul>

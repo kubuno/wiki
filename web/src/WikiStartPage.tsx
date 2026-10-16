@@ -18,7 +18,7 @@ export default function WikiStartPage() {
   const { canCreate } = useWikiCreationPolicy()
 
   // `?new=1` is how the sidebar "New" menu asks for the dialog. It is honoured
-  // only when the instance lets this user open a space — otherwise the request
+  // only when the instance lets this user open a space - otherwise the request
   // is simply dropped and they land on the wiki home, instead of filling in a
   // form the server will refuse.
   useEffect(() => {
@@ -137,7 +137,7 @@ function WikisGrid({ onCreate }: { onCreate: () => void }) {
                 <BookMarked size={20} className="text-[#0f766e]" />
                 <span className="font-semibold text-text-primary truncate">{w.name}</span>
               </div>
-              <p className="text-sm text-text-secondary line-clamp-2 min-h-[2.5rem]">{w.description || '—'}</p>
+              <p className="text-sm text-text-secondary line-clamp-2 min-h-[2.5rem]">{w.description || '-'}</p>
               <div className="flex items-center gap-3 mt-3 text-xs text-text-tertiary">
                 <span>{t('pages_count', { count: w.page_count })}</span>
                 <span className="inline-flex items-center gap-1">
@@ -188,7 +188,7 @@ export function CreateWikiDialog({ onClose, onCreated }: { onClose: () => void; 
           />
         </div>
         {/* Shared spaces can be reserved to administrators independently of
-            personal ones — the checkbox disappears rather than failing on save. */}
+            personal ones - the checkbox disappears rather than failing on save. */}
         {canCreateShared && (
           <label className="flex items-start gap-2 text-sm text-text-primary cursor-pointer">
             <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} className="mt-0.5" />

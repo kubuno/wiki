@@ -23,14 +23,14 @@ number at release time, and CI publishes that section as the GitHub Release note
 ### Added
 
 - **Choice of database engine.** The wiki now runs on PostgreSQL, MySQL/MariaDB
-  or SQLite — the administrator picks the engine in configuration and a single
+  or SQLite - the administrator picks the engine in configuration and a single
   build connects to whichever is named, with no per-engine build. SQLite makes a
   self-contained, server-less install possible.
 
 ### Changed
 
 - **Full-text page search now behaves identically on every engine.** Search
-  keeps working the same way — a plural query still finds the singular (a search
+  keeps working the same way - a plural query still finds the singular (a search
   for "chevaux" matches a page about a "cheval"), and an accent-free query still
   finds accented words ("resume" finds "résumé"), with page titles ranked above
   page bodies. It no longer depends on a PostgreSQL-only text-search feature.
@@ -47,7 +47,7 @@ number at release time, and CI publishes that section as the GitHub Release note
 
 - **Input validation library updated.** The version in use carried
   RUSTSEC-2024-0421 through its domain-name parser, which accepted Punycode
-  labels that decode to plain ASCII — a mismatch an attacker can use to make two
+  labels that decode to plain ASCII - a mismatch an attacker can use to make two
   different names look like one.
 
 ### Fixed
@@ -84,24 +84,24 @@ number at release time, and CI publishes that section as the GitHub Release note
 - **This module now installs as a Kubuno package (`.kbpkg`) only.** Its system
   packages (Debian/RPM and the Windows and macOS installers) are no longer
   built: the module is distributed as one `.kbpkg` per platform (Linux, Windows,
-  macOS) that the Kubuno server installs itself — from the admin console, or
+  macOS) that the Kubuno server installs itself - from the admin console, or
   offline with `kubuno modules:install <file>.kbpkg`.
 - **Dates are formatted by the platform now, not by a library.** `date-fns` is
   gone from this module: the shared SDK exposes helpers built on `Intl`, which is
   localised for every language we ship and needs no locale bundle loaded. Call
-  sites say what a date is FOR — `formatDate(d, 'date')` — and the platform
+  sites say what a date is FOR - `formatDate(d, 'date')` - and the platform
   decides how to write it, so a reader in Japanese no longer gets a French
   layout. Machine formats (keys, `<input type="date">` values) go through
   `toISODate` and friends, built from local calendar fields so the day cannot
   shift near midnight.
 - **The README now opens with the module's logo.** The public README on
   GitHub now shows the module's designer logo (the same PNG shown as the
-  browser tab icon and in the applications menu) at the top of the page — the
+  browser tab icon and in the applications menu) at the top of the page - the
   repository landing now matches the icon a signed-in user sees inside the
   platform. The image ships in-repo, under `.github/logo.png`, so it renders
   even when the repo is browsed offline.
 
-- **New Wiki logo** — a violet hexagon with a white book carrying a "W", used
+- **New Wiki logo** - a violet hexagon with a white book carrying a "W", used
   as the browser-tab icon and in the applications menu. It is now raster (PNG)
   designer artwork, and the browser-tab icon now resolves (the previous SVG
   path pointed at a missing file).
@@ -118,11 +118,11 @@ number at release time, and CI publishes that section as the GitHub Release note
   release; the lockfile now takes the version that replaced it.
 - **The package could not be built where `zip` is absent.** The Windows job of
   the continuous integration has no `zip`, so the Windows package was simply lost
-  the first time it was attempted — a script failure, not a build failure. The
+  the first time it was attempted - a script failure, not a build failure. The
   builder now falls back to 7-Zip, then to PowerShell.
 ### Added
 
-- **This module now ships a `.kbpkg`** — the single package format a Kubuno
+- **This module now ships a `.kbpkg`** - the single package format a Kubuno
   server installs by itself, the same file on Linux, Windows and macOS. It
   carries the same binary, interface and manifest as the system packages,
   arranged the way the server expects to find a module on disk, plus a
@@ -136,7 +136,7 @@ number at release time, and CI publishes that section as the GitHub Release note
 
 - **A built package could be thrown away instead of published.** The job that
   attaches a package to the release waited ten minutes for another workflow to
-  create that release, then gave up with "release never appeared — build.yml
+  create that release, then gave up with "release never appeared - build.yml
   likely failed". The diagnosis was wrong: on a repository whose `.deb` takes
   longer than ten minutes to build, the release simply did not exist yet, and a
   package that had built perfectly was discarded. Four modules reached v0.1.6
@@ -154,7 +154,7 @@ number at release time, and CI publishes that section as the GitHub Release note
 - **Wiki now authenticates proxied requests from a signed token instead of
   trusting plain headers.** Requests must carry a valid `X-Kubuno-Auth` token
   minted by the core with this module's internal secret (see `kubuno-modauth`),
-  rather than reading `X-Kubuno-User-*` headers at face value — which any process
+  rather than reading `X-Kubuno-User-*` headers at face value - which any process
   reaching Wiki's loopback port could otherwise forge to act as any user.
 
 ## [0.1.6] - 2026-08-19
@@ -163,7 +163,7 @@ number at release time, and CI publishes that section as the GitHub Release note
 
 - Theme tokens: two colours for navigation labels (`--color-text-nav`,
   `--color-text-nav-active`). Every module carries the same token sheet, so the
-  values must match across them — whichever bundle loads last would otherwise
+  values must match across them - whichever bundle loads last would otherwise
   win. No visible change inside this module.
 
 ### Changed

@@ -1,6 +1,6 @@
 //! Storage of wiki PAGE content in the `drive` module (not in the database).
 //!
-//! Kubuno wiki format — MIME `application/vnd.kubuno.wiki+json`, extension
+//! Kubuno wiki format - MIME `application/vnd.kubuno.wiki+json`, extension
 //! `.kbwik`, gzipped JSON. The database only keeps an index row (`pages`): the
 //! `file_id` reference, a truncated `preview` and the normalized search columns
 //! (`title_norm` / `body_norm`).

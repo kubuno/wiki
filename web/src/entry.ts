@@ -1,6 +1,6 @@
 import { RouteRegistry, ExtensionRegistry, WaffleAppRegistry, FileTypeRegistry, FaviconRegistry, ModuleSettingsRegistry, useSidebarStore, useSearchStore, navigate, SDK_VERSION } from '@kubuno/sdk'
 /**
- * Wiki module bundle — loaded at runtime by the host. Shared specifiers
+ * Wiki module bundle - loaded at runtime by the host. Shared specifiers
  * (react, zustand, i18next, @ui, @kubuno/sdk…) are resolved by the host import
  * map; the host imports this file and calls `register()`. `sdkVersion` lets the
  * host reject a contract mismatch.
@@ -26,7 +26,7 @@ export function register() {
   // The header gear button opens the per-user Wiki settings while in /wiki.
   ModuleSettingsRegistry.register('wiki')
 
-  // Kubuno file type produced by the wiki (.kbwik) — filter + icon + open.
+  // Kubuno file type produced by the wiki (.kbwik) - filter + icon + open.
   FileTypeRegistry.register({
     moduleId: 'wiki', label: 'Wiki', icon: 'BookMarked',
     mimeTypes: ['application/vnd.kubuno.wiki+json'],

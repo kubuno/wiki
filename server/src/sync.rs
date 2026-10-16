@@ -4,8 +4,8 @@
 //! record and a tombstone per hard-deleted wiki. On PostgreSQL that used to be a
 //! `SEQUENCE` plus `BEFORE UPDATE` / `AFTER DELETE` triggers; here it is the
 //! portable [`kubuno_db::journal`] primitive, driven from Rust at every write
-//! site. This module holds the literal table / domain names those calls take —
-//! all `&'static str`, never request data — so the write sites read uniformly
+//! site. This module holds the literal table / domain names those calls take -
+//! all `&'static str`, never request data - so the write sites read uniformly
 //! and a rename happens in one place.
 //!
 //! Two entities are versioned: **wikis** and **pages**.
@@ -39,7 +39,7 @@ pub async fn next_page_seq(tx: &mut kubuno_db::DbTx) -> Result<i64, sqlx::Error>
     kubuno_db::journal::next_seq(tx, CHANGE_COUNTER, PAGE_DOMAIN).await
 }
 
-/// Bumps a **wiki** to a fresh sequence — the portable replacement for the old
+/// Bumps a **wiki** to a fresh sequence - the portable replacement for the old
 /// child-triggered no-op `UPDATE`. Called after any write to a wiki member.
 pub async fn touch_wiki(tx: &mut kubuno_db::DbTx, wiki_id: Uuid) -> Result<(), sqlx::Error> {
     kubuno_db::journal::touch(tx, WIKIS_TABLE, CHANGE_COUNTER, WIKI_DOMAIN, "id", wiki_id)

@@ -70,7 +70,7 @@ function RecentChanges({ wikiId, nav }: { wikiId: string; nav: (to: string) => v
           <button className="text-primary hover:underline truncate" onClick={() => nav(pagePath(wikiId, c.namespace, c.title))}>
             {c.namespace === 'Main' ? c.title : `${c.namespace}:${c.title}`}
           </button>
-          <span className="text-text-secondary text-xs">· {t(`change_${c.change_type}`)} · {c.author_name || '—'}</span>
+          <span className="text-text-secondary text-xs">· {t(`change_${c.change_type}`)} · {c.author_name || '-'}</span>
           {c.byte_delta !== 0 && (
             <span className={`text-xs ${c.byte_delta > 0 ? 'text-success' : 'text-danger'}`}>
               {c.byte_delta > 0 ? '+' : ''}{c.byte_delta}

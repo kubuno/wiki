@@ -6,7 +6,7 @@ import { getActiveWiki } from './nav'
 
 /**
  * Items for the sidebar "New" button (`shell.new-actions` extension point).
- * Built when the menu opens — fresh labels and active wiki, no hooks.
+ * Built when the menu opens - fresh labels and active wiki, no hooks.
  */
 export function newActionItems(): MenuItem[] {
   const t = (key: string) => i18n.t(`wiki:${key}`)

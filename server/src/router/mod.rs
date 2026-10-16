@@ -12,7 +12,7 @@ use crate::state::AppState;
 
 pub fn build(state: AppState) -> Router {
     let authed = Router::new()
-        // Sync deltas (local-first) — before the /wikis/:id catch-alls.
+        // Sync deltas (local-first) - before the /wikis/:id catch-alls.
         .route("/wikis/delta", get(delta::wikis_delta))
         .route("/pages/delta", get(delta::pages_delta))
         // Wikis

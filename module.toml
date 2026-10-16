@@ -33,7 +33,7 @@ protected_folder = "Wiki"
 section  = "main"
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Wiki — pages du panneau d'administration
+#  Wiki - pages du panneau d'administration
 # ══════════════════════════════════════════════════════════════════════════════
 # Chaque groupe devient une entrée du menu d'administration (Modules → Wiki), à
 # son adresse propre. Chaque réglage déclaré ici est LU par du code qui agit :
